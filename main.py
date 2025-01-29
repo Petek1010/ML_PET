@@ -53,6 +53,7 @@ def SVM(train_data, test_data):
     svm_model = SVC(kernel='linear', C=1.0, gamma='scale')
     loo = LeaveOneOut()
 
+    ''' model validation '''
     # Store predictions and true values
     y_true_loo = []
     y_pred_loo = []
@@ -67,8 +68,9 @@ def SVM(train_data, test_data):
         svm_model.fit(X_loo_train, y_loo_train)
 
         # Validation
-        y_pred_loo.append(svm_model.predict(X_loo_val)[0])
-        y_true_loo.append(y_loo_val[0])
+        y_pred_loo.append(svm_model.predict(X_loo_val)[0]) # predicted value
+        y_true_loo.append(y_loo_val[0]) # validation target == true value
+
 
     # Evaluate the LOO performance
     loo_accuracy = accuracy_score(y_true_loo, y_pred_loo)
@@ -95,44 +97,27 @@ def SVM(train_data, test_data):
     for label, spec in specificity_per_class.items():
         print(f"Class {label}: {spec:.2f}")
 
+    ''' Train on Full Training Data and Predict on Real Test Data '''
+    print("\nTraining on Full Dataset and Predicting on Test Data...")
 
+    # Train the model on the full training dataset
+    svm_model.fit(X_train, y_train)
 
+    # Extract features from test data (excluding the target column if present)
+    X_test = test_data.iloc[:, 1:].values  # Use same features as training data
 
+    # Make predictions
+    test_predictions = svm_model.predict(X_test)
 
+    # Add predictions to the test dataframe
+    test_data["Predicted_Class"] = test_predictions
 
-def simple_svm(train_data):
+    # Display the first few rows with predictions
+    print("\nPredictions on Test Data:")
+    print(test_data.head())
 
-    # Setting train data on features and targets
-    X_train = train_data.iloc[:, 1:].values  # features: vFDRP, ADRP, CJDRP
-    y_train = train_data["FirstThreeChars"].values  # target: First three chars: AD, AD... (multiclass)
+    return test_data
 
-    # Model and validation setup
-    svm_model = SVC(kernel='linear', C=1.0, gamma='scale')
-    loo = LeaveOneOut()
-
-    # Store predictions and true values
-    accuracies = []
-
-    # Perform leave one out cross-validation
-    for train_index, val_index in loo.split(X_train):
-        # Split the training data into train and validation sets
-        X_loo_train, X_loo_val = X_train[train_index], X_train[val_index]
-        y_loo_train, y_loo_val = y_train[train_index], y_train[val_index]
-
-        # Train the SVM model on the training subset
-        svm_model.fit(X_loo_train, y_loo_train)
-
-        y_pred = svm_model.predict(X_loo_val)
-
-        # Validation
-        accuracies.append(accuracy_score(y_loo_val, y_pred))
-
-    # Calculate overall accuracy
-    mean_accuracy = np.mean(accuracies)
-
-
-
-    print(f"Mean accuracy (LOOCV): {mean_accuracy}")
 
 
 
@@ -142,5 +127,5 @@ if __name__ == '__main__':
 
     rawData = importData("AllScores.xlsx", "ZScores")
     train_data, test_data = filterData(rawData)
-    #SVM(train_data, test_data)
-    simple_svm(train_data)
+    SVM(train_data, test_data)
+
