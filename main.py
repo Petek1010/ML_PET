@@ -1,6 +1,7 @@
 import sys
 import svm
 
+
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -52,5 +53,9 @@ if __name__ == '__main__':
     rawData = importData("AllScores.xlsx", "ZScores")
     train_data, test_data = filterData(rawData)
     svm.SVM(train_data,test_data)
+    svm.cross_val_svm(train_data)
+
+    ''' Visualizing '''
+
 
 
