@@ -1,5 +1,6 @@
 import sys
 import svm
+import time
 
 
 import numpy as np
@@ -53,9 +54,14 @@ if __name__ == '__main__':
     rawData = importData("AllScores.xlsx", "ZScores")
     train_data, test_data = filterData(rawData)
     #svm.SVM(train_data,test_data)
+
+    start_time = time.time()
     svm.cross_val_svm(train_data, test_data)
+    end_time = time.time()
 
     ''' Visualizing '''
+    execution_time = end_time - start_time
+    print(f"Execution Time: {execution_time:.4f} seconds")
 
 
 
