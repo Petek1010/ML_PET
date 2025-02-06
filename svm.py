@@ -12,8 +12,9 @@ from sklearn.model_selection import LeaveOneOut
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import cross_val_predict
 from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.preprocessing import LabelBinarizer
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, ConfusionMatrixDisplay, PrecisionRecallDisplay
-
+from sklearn.metrics import RocCurveDisplay
 
 
 def SVM(train_data, test_data):
@@ -92,7 +93,7 @@ def SVM(train_data, test_data):
     print("\nPredictions on Test Data:")
     print(test_data.head())
 
-    return test_data
+
 
 def cross_val_svm(train_data, test_data):
     # Setting train data on features and targets
@@ -101,14 +102,13 @@ def cross_val_svm(train_data, test_data):
 
     X_test = test_data.iloc[:, 1:].values
 
-    # Normalized and scaled data
+    # Normalize and scale train and test features
     scaler = StandardScaler()
-    X_train_norm = scaler.fit_transform(X_train) # Apply also for testing data !!!
-    X_test_norm = scaler.fit_transform(X_test)
+    X_train_norm = scaler.fit_transform(X_train)
+    X_test_norm = scaler.transform(X_test)
 
     # Model and validation setup
-    svm_model = SVC(kernel='linear', C=1.0, decision_function_shape="ovr", random_state=42)
-    #svm_model = svm.LinearSVC(C=1.0)
+    svm_model = SVC(kernel='linear', C=1.0, decision_function_shape="ovr", random_state=42, probability=True)
     loo = LeaveOneOut()
 
     # Predicted values
@@ -117,45 +117,64 @@ def cross_val_svm(train_data, test_data):
     # Classification report
     print('\n Classification report: \n',classification_report(y_train, y_pred, digits=3))
 
-    # Compute and plot confusion matrix
-    cm = confusion_matrix(y_train, y_pred)
-    # print("Confusion Matrix:\n", cm)
-    labels = np.unique(y_train)
+    cm = vis.conf_matrix(y_train,y_pred,0)
+    vis.recall(cm, y_train, 0)
+    vis.classification_accuracy(cm, y_train)
 
-    fig, ax = plt.subplots(figsize=(6, 5))
-    ConfusionMatrixDisplay(cm, display_labels=labels).plot(ax=ax, cmap="Greens")
-    ax.set_title("Confusion Matrix")
+    # Print overall accuracy (score):
+    scores = cross_val_score(svm_model, X_train, y_train, cv=loo)
+    print('\nModel overall accuracy:')
+    print("%0.2f accuracy with a standard deviation of %0.2f" % (scores.mean(), scores.std()))
+
+
+    ''' Lean on test data and perform predictions '''
+    history = svm_model.fit(X_train_norm,y_train)
+
+    y_pred_test = svm_model.predict(X_test_norm)
+
+    test_data["PredictedClass"] = y_pred_test
+    print('\n--------------- PREDICTIONS ------------')
+    print("\nPredictions on Test Data:")
+    print(test_data.head())
+
+
+    ''' ROC analysis '''
+
+    # Convert y_train (true labels) to one-hot encoding
+    lb = LabelBinarizer()
+    lb.fit(y_train)
+
+    # Transform your true labels (e.g., y_train or y_test)
+    y_onehot_true = lb.transform(y_train)  # or use y_test if evaluating on test data
+
+
+    y_score = svm_model.decision_function(X_train_norm) # Decision function scores
+    y_score = svm_model.predict_proba(X_train_norm)
+
+
+
+    # Select class of interest for one-vs-rest ROC
+    class_of_interest = "AD_"
+    class_id = np.flatnonzero(lb.classes_ == class_of_interest)[0]
+    print(f"Class ID for {class_of_interest}: {class_id}")
+
+    # Plot ROC Curve
+    display = RocCurveDisplay.from_predictions(
+        y_onehot_true[:, class_id],  # True labels (one-hot)
+        y_score[:, class_id],  # Model scores (probabilities or decision function)
+        name=f"{class_of_interest} vs the rest",
+        color="darkorange",
+        plot_chance_level=True,
+        despine=True,
+    )
+
+    # Improve Plot Appearance
+    _=display.ax_.set(
+        xlabel="False Positive Rate",
+        ylabel="True Positive Rate",
+        title=f"One-vs-Rest ROC Curve:\n{class_of_interest} vs All",
+    )
     plt.show()
-
-
-    # Compute recall (sensitivity) per class [TP/[TP+FN]]
-    per_class_accuracy = cm.diagonal() / cm.sum(axis=1)
-    labels = np.unique(y_train)
-    print("\nRecall for each class (Per-Class Accuracy):")
-    for label, acc in zip(labels, per_class_accuracy):
-        print(f"Class {label}: {acc:.2f}")
-
-
-    # Compute Classification accuracy (CA) ORANGE feature
-    # using (TP + TN) / Total Samples
-    total_samples = np.sum(cm)  # Total number of samples
-    per_class_CA = []
-    for i in range(len(cm)):
-        TP = cm[i, i]  # True Positives
-        FN = np.sum(cm[i, :]) - TP  # False Negatives
-        FP = np.sum(cm[:, i]) - TP  # False Positives
-        TN = total_samples - (TP + FN + FP)  # True Negatives
-
-        per_class_CA.append((TP + TN) / total_samples)
-
-    # Print results
-    labels = np.unique(y_train)
-    print("\nClassification accuracy (CA):")
-    for label, ca in zip(labels, per_class_CA):
-        print(f"Class {label}: {ca:.3f}")
-
-
-
 
 
 

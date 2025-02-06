@@ -52,8 +52,8 @@ if __name__ == '__main__':
 
     rawData = importData("AllScores.xlsx", "ZScores")
     train_data, test_data = filterData(rawData)
-    svm.SVM(train_data,test_data)
-    svm.cross_val_svm(train_data)
+    #svm.SVM(train_data,test_data)
+    svm.cross_val_svm(train_data, test_data)
 
     ''' Visualizing '''
 
