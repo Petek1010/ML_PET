@@ -2,9 +2,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, LabelBinarizer
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from sklearn.metrics import RocCurveDisplay
+from sklearn.metrics import roc_curve, auc, roc_auc_score
+
 
 
 
@@ -92,4 +94,71 @@ def classification_accuracy(cm, y_train):
     print("\nClassification accuracy (CA):")
     for label, ca in zip(labels, per_class_CA):
         print(f"Class {label}: {ca:.3f}")
+
+def ROC_analysis_target(y_score, y_train, target):
+    lb = LabelBinarizer()
+    y_onehot_true = lb.fit_transform(y_train)
+
+    # Select class of interest for one-vs-rest ROC
+    class_of_interest = target
+    class_id = np.flatnonzero(lb.classes_ == class_of_interest)[0]
+    print(f"Class ID for {class_of_interest}: {class_id}")
+
+    # Plot ROC Curve
+    display = RocCurveDisplay.from_predictions(
+        y_onehot_true[:, class_id],  # True labels (one-hot)
+        y_score[:, class_id],  # Model scores (probabilities or decision function)
+        name=f"{class_of_interest} vs the rest",
+        color="darkorange",
+        plot_chance_level=True,
+        despine=True,
+    )
+
+    # Improve Plot Appearance
+    _ = display.ax_.set(
+        xlabel="False Positive Rate",
+        ylabel="True Positive Rate",
+        title=f"One-vs-Rest ROC Curve:\n{class_of_interest} vs All",
+    )
+    plt.show()
+
+def ROC_analysis_all_targets(y_score, y_train):
+    # Convert y_train to one-hot encoding
+    lb = LabelBinarizer()
+    y_onehot_true = lb.fit_transform(y_train)
+    class_labels = lb.classes_  # Get class names
+
+    # Initialize variables for weighted ROC
+    weighted_fpr = np.linspace(0, 1, 100)  # Interpolation points
+    weighted_tpr = np.zeros_like(weighted_fpr)
+    class_counts = np.sum(y_onehot_true, axis=0)  # Class distribution
+
+    # Compute ROC for each class (OvR approach)
+    plt.figure(figsize=(7, 5))
+    for i, class_label in enumerate(class_labels):
+        fpr, tpr, _ = roc_curve(y_onehot_true[:, i], y_score[:, i])
+        roc_auc = auc(fpr, tpr)
+        class_weight = class_counts[i] / len(y_train)  # Weight by class prevalence
+
+        # Interpolate TPR at common FPR points
+        interp_tpr = np.interp(weighted_fpr, fpr, tpr)
+        weighted_tpr += interp_tpr * class_weight  # Weighted sum
+
+        # Plot individual class ROC curves
+        plt.plot(fpr, tpr, label=f"{class_label} (AUC = {roc_auc:.3f})")
+
+    # Plot the final weighted ROC curve
+    plt.plot(weighted_fpr, weighted_tpr, color='black', linestyle="--", label="Weighted ROC Curve")
+    plt.plot([0, 1], [0, 1], "k--", lw=1)  # Diagonal line
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title("Weighted ROC Curve (One-vs-Rest)")
+    plt.legend()
+    plt.show()
+
+    # Overall Weighted AUC
+    macro_auc = roc_auc_score(y_onehot_true, y_score, average="macro", multi_class="ovr")
+    weighted_auc = roc_auc_score(y_onehot_true, y_score, average="weighted", multi_class="ovr")
+    print(f"Macro-Averaged AUC: {macro_auc:.3f}")
+    print(f"Weighted-Averaged AUC: {weighted_auc:.3f}")
 

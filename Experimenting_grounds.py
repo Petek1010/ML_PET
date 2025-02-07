@@ -1,23 +1,43 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import label_binarize
+from sklearn.metrics import roc_curve, auc
+from sklearn.svm import SVC
+from sklearn.model_selection import LeaveOneOut, cross_val_predict
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
+import pandas as pd
 
-# Sample dataset
-X = [[1, 2], [3, 4], [5, 6], [7, 8]]
-y = [0, 1, 0, 1]
 
-# Split into training and test sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=42)
+def compute_roc_for_class(y_train ,y_score, class_of_interest):
+    # Binarize labels for one-vs-rest classification
+    classes = np.unique(y_train)
+    y_onehot = label_binarize(y_train, classes=classes)
 
-# Initialize scaler
-scaler = StandardScaler()
 
-# 🔹 Fit & transform training data (computes mean/std, then scales)
-X_train_scaled = scaler.fit_transform(X_train)
+    # Find class index
+    if class_of_interest not in classes:
+        raise ValueError(f"Class {class_of_interest} not found in dataset.")
 
-# 🔹 Transform test data using the same scaling parameters (NO fitting)
-X_test_scaled = scaler.transform(X_test)
+    class_id = np.flatnonzero(classes == class_of_interest)[0]
 
-print("Original X_train:", X_train)
-print("Scaled X_train:", X_train_scaled)
-print("Original X_test:", X_test)
-print("Scaled X_test:", X_test_scaled)
+    # Compute ROC curve and AUC for the selected class
+    fpr, tpr, _ = roc_curve(y_onehot[:, class_id], y_score[:, class_id])
+    roc_auc = auc(fpr, tpr)
+
+    # Plot ROC curve
+    plt.figure(figsize=(6, 5))
+    plt.plot(fpr, tpr, color="darkorange", lw=2, label=f"ROC curve (AUC = {roc_auc:.2f})")
+    plt.plot([0, 1], [0, 1], color="gray", linestyle="--", label="Chance Level")
+
+    # Formatting
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title(f"ROC Curve: {class_of_interest} vs Rest")
+    plt.legend(loc="lower right")
+    plt.grid()
+    plt.show()
+
+    print(f"AUC for {class_of_interest}: {roc_auc:.3f}")
+
+# Example usage:
+# compute_roc_for_class(your_dataframe, "AD_")

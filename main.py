@@ -1,5 +1,6 @@
 import sys
 import svm
+import logistic_regression as lr
 import time
 
 
@@ -41,7 +42,7 @@ def filterData(data):
     train_data = filtered_data.loc[filtered_data.FirstThreeChars.isin(['AD_', 'CJD', 'FTD', 'NC-'])]
     test_data = filtered_data.loc[filtered_data.FirstThreeChars.isin(['swd'])]
 
-    print(train_data)
+    print(train_data.head())
 
     return train_data, test_data
 
@@ -54,14 +55,15 @@ if __name__ == '__main__':
     rawData = importData("AllScores.xlsx", "ZScores")
     train_data, test_data = filterData(rawData)
     #svm.SVM(train_data,test_data)
+    #svm.cross_val_svm(train_data, test_data)
+    #svm.grid_search(train_data)
 
-    start_time = time.time()
-    svm.cross_val_svm(train_data, test_data)
-    end_time = time.time()
 
-    ''' Visualizing '''
-    execution_time = end_time - start_time
-    print(f"Execution Time: {execution_time:.4f} seconds")
+    lr.logistic_regression(train_data,test_data)
+
+
+
+
 
 
 
