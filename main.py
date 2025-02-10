@@ -16,6 +16,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
 from sklearn import datasets
 
+from multiclassifier import MultiClassifier, SVM
 
 
 def importData(fileName, sheetName = ''):
@@ -42,7 +43,7 @@ def filterData(data):
     train_data = filtered_data.loc[filtered_data.FirstThreeChars.isin(['AD_', 'CJD', 'FTD', 'NC-'])]
     test_data = filtered_data.loc[filtered_data.FirstThreeChars.isin(['swd'])]
 
-    print(train_data.head())
+    #print(train_data.head())
 
     return train_data, test_data
 
@@ -52,14 +53,25 @@ def filterData(data):
 if __name__ == '__main__':
     print("Start program")
 
+
+
     rawData = importData("AllScores.xlsx", "ZScores")
     train_data, test_data = filterData(rawData)
+
+    mcf = MultiClassifier('svm')
+    print(mcf.get_params())
+
+
+
+
+
     #svm.SVM(train_data,test_data)
     #svm.cross_val_svm(train_data, test_data)
-    #svm.grid_search(train_data)
 
 
-    lr.logistic_regression(train_data,test_data)
+
+    #lr.logistic_regression(train_data,test_data)
+
 
 
 
