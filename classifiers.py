@@ -24,14 +24,15 @@ class BaseModel:
         return self.model.get_params()
 
 class SVM(BaseModel):
-    def __init__(self, kernel='linear', C=1.0, probability=True, decision_function_shape='ovr'):
+    def __init__(self, kernel='linear', C=1.0, degree=3, gamma='scale', probability=True, decision_function_shape='ovr'):
         super().__init__()
+
         self.kernels = {'linear', 'poly', 'rbf', 'sigmoid'}
-        # Validate kernel choice
         if kernel in self.kernels:
             self.kernel = kernel
         else:
             raise ValueError(f"Invalid kernel '{kernel}'. Choose from {self.kernels}")
+
         self.model = SVC(kernel=self.kernel,
                          C=C,
                          probability=probability,

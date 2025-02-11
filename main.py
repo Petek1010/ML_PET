@@ -1,4 +1,7 @@
 import sys
+
+from scipy.constants import degree
+
 import svm
 import logistic_regression as lr
 import time
@@ -16,7 +19,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
 from sklearn import datasets
 
-from multiclassifier import MultiClassifier, SVM
+
+from multiclassifier import MultiClassifier
 
 
 def importData(fileName, sheetName = ''):
@@ -58,8 +62,32 @@ if __name__ == '__main__':
     rawData = importData("AllScores.xlsx", "ZScores")
     train_data, test_data = filterData(rawData)
 
-    mcf = MultiClassifier('svm')
-    print(mcf.get_params())
+    svm_model = MultiClassifier(train_data, test_data, classifier_name='svm')
+    lr_model = MultiClassifier(train_data, test_data, classifier_name='logistic_regression')
+
+    nb_model = MultiClassifier(train_data,test_data,classifier_name='naive_bayes')
+    nb_model.evaluate()
+    print(nb_model.get_params())
+    nb_model.confusion_matrix()
+
+
+
+    '''
+    svm_model.evaluate()
+    svm_pred =svm_model.predict()
+
+    lr_model.evaluate()
+    lr_pred = lr_model.predict()
+
+    compare_result = pd.DataFrame()
+    compare_result['PredictedSVM'] = svm_pred
+    compare_result['PredictedLR'] = lr_pred
+
+    print('Prediction Comparison In Models')
+    print(compare_result)
+    '''
+
+
 
 
 
