@@ -1,26 +1,12 @@
 import sys
 
-from scipy.constants import degree
-
-import svm
-import logistic_regression as lr
-import time
-
-
-import numpy as np
 import pandas as pd
-import tensorflow as tf
-import matplotlib.pyplot as plt
 
-from sklearn.svm import SVC
-from sklearn.model_selection import LeaveOneOut
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-from sklearn.model_selection import train_test_split
-from sklearn.model_selection import GridSearchCV
-from sklearn import datasets
-
-
+from data_process import DataProcess, SVMPreprocess
+from model_selector import ModelSelector
+from models import SVM
 from multiclassifier import MultiClassifier
+from classifier import Classifier
 
 
 def importData(fileName, sheetName = ''):
@@ -47,7 +33,8 @@ def filterData(data):
     train_data = filtered_data.loc[filtered_data.FirstThreeChars.isin(['AD_', 'CJD', 'FTD', 'NC-'])]
     test_data = filtered_data.loc[filtered_data.FirstThreeChars.isin(['swd'])]
 
-    #print(train_data.head())
+
+
 
     return train_data, test_data
 
@@ -56,49 +43,54 @@ def filterData(data):
 
 if __name__ == '__main__':
     print("Start program")
+    #data = DataProcess("AllScores.xlsx", "ZScores")
+    #X_train, y_train, X_test, y_test = data.old_pipeline()
+
+    # Creating data for SVM
+    svm_data = SVMPreprocess("AllScores.xlsx", "ZScores")
+    X_train, y_train, X_test, y_test = svm_data.preprocess()
+
+   # Testing model selector
+   # model_selector = ModelSelector(X_train, y_train, X_test, y_test, scoring="accuracy")
+   # model_selector.find_best_model()
 
 
+
+    """ Supported vector machines """
+    SVM_model = Classifier(X_train, y_train, X_test, y_test, 'svm')
+    #SVM_model.evaluate()
+    #SVM_model.get_model_evaluation()
+
+    """ Logistic regression """
+    lr_model = Classifier(X_train, y_train, X_test, y_test,'logistic_regression', C=4)
+    lr_model.evaluate()
+    lr_model.get_model_evaluation()
+
+    """ Naive Bayes """
+
+
+    #--------------------------------------------------------------------
+
+
+
+
+    print(" OLDER VERSION AS A COMPARISON BASE\n")
 
     rawData = importData("AllScores.xlsx", "ZScores")
     train_data, test_data = filterData(rawData)
 
     svm_model = MultiClassifier(train_data, test_data, classifier_name='svm')
-    lr_model = MultiClassifier(train_data, test_data, classifier_name='logistic_regression')
-
-    nb_model = MultiClassifier(train_data,test_data,classifier_name='naive_bayes')
-    nb_model.evaluate()
-    print(nb_model.get_params())
-    nb_model.confusion_matrix()
-
-
-
-    '''
     svm_model.evaluate()
-    svm_pred =svm_model.predict()
+    #svm_model.ROC_analysis_all_targets()
+    #lr_model = MultiClassifier(train_data, test_data, classifier_name='logistic_regression')
 
-    lr_model.evaluate()
-    lr_pred = lr_model.predict()
-
-    compare_result = pd.DataFrame()
-    compare_result['PredictedSVM'] = svm_pred
-    compare_result['PredictedLR'] = lr_pred
-
-    print('Prediction Comparison In Models')
-    print(compare_result)
-    '''
+    #nb_model = MultiClassifier(train_data,test_data,classifier_name='naive_bayes')
+    #nb_model.evaluate()
+    #print(nb_model.get_params())
+    #nb_model.confusion_matrix()
 
 
 
-
-
-
-
-    #svm.SVM(train_data,test_data)
-    #svm.cross_val_svm(train_data, test_data)
-
-
-
-    #lr.logistic_regression(train_data,test_data)
 
 
 
