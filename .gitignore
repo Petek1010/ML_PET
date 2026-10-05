@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# PyCharm
+.idea/
+
+# Data / model outputs
+*.pkl
+*.xlsx
+
+# Generated plots / results
+*.png
+*.html
+
+# Temporary / generated directories
+ModelVsMetricPlots/
+ModelVsModelPlots/
+QQplots/
+Primeri/
+CodeInTextFormat/

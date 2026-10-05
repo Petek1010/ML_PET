@@ -1,7 +1,47 @@
+import sys
+
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn import svm
 from sklearn.inspection import DecisionBoundaryDisplay
+
+import matplotlib.pyplot as plt
+
+population_priors_raw = np.array([1500, 150, 15])     # counts per 100k
+train_priors_raw       = np.array([50, 5, 0.5]  )     # counts in train
+
+population_priors_norm = population_priors_raw / sum(population_priors_raw)
+train_priors_norm       = train_priors_raw / sum(train_priors_raw)
+
+print(population_priors_norm)
+print(train_priors_norm)
+print(population_priors_raw / train_priors_raw)
+print(population_priors_norm / train_priors_norm)
+
+sys.exit()
+
+# Imena modelov in F1-macro rezultati
+models = ["Logistic Regression", "Naive Bayes", "NB + priors", "SVM"]
+f1_scores = [0.839, 0.789, 0.636, 0.820]
+
+# Barve: označimo najboljši model
+colors = ['green' if score == max(f1_scores) else 'skyblue' for score in f1_scores]
+
+# Narišemo stolpčni graf
+plt.figure(figsize=(8, 5))
+plt.bar(models, f1_scores, color=colors)
+plt.ylim(0, 1)
+plt.ylabel("F1-macro")
+plt.title("Primerjava F1-macro med modeli")
+plt.xticks(rotation=15)
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+
+# Dodamo številke na stolpce
+for i, score in enumerate(f1_scores):
+    plt.text(i, score + 0.02, f"{score:.3f}", ha='center', fontsize=10)
+
+plt.tight_layout()
+plt.show()
 
 
 ''' Sample Data '''
@@ -36,9 +76,10 @@ x_min, x_max, y_min, y_max = -3, 3, -3, 3
 ax.set(xlim=(x_min, x_max), ylim=(y_min, y_max))
 
 # Plot samples by color and add legend
-scatter = ax.scatter(X[:, 0], X[:, 1], s=150, c=y, label=y, edgecolors="k")
-ax.legend(*scatter.legend_elements(), loc="upper right", title="Classes")
-ax.set_title("Samples in two-dimensional feature space")
+scatter = ax.scatter(X[:, 0], X[:, 1], s=60, c=y, label=y, edgecolors="k")
+ax.legend(*scatter.legend_elements(), loc="upper right", title="Razred")
+ax.set_title("Vzorci v dvodimenzionalnem prostoru značilnosti")
+plt.savefig("SVM1.png", dpi=600, bbox_inches="tight")
 _ = plt.show()
 
 
@@ -85,124 +126,16 @@ def plot_training_data_with_decision_boundary(kernel, ax=None, long_title=True, 
 
     # Plot samples by color and add legend
     scatter = ax.scatter(X[:, 0], X[:, 1], c=y, s=30, edgecolors="k")
-    ax.legend(*scatter.legend_elements(), loc="upper right", title="Classes")
+    ax.legend(*scatter.legend_elements(), loc="upper right", title="Razred")
 
     if long_title:
-        ax.set_title(f"Decision boundaries of {kernel} kernel in SVC")
+        ax.set_title(f"SVM pri polinomskem jedru")
     else:
         ax.set_title(kernel)
-
+    plt.savefig("SVM_poly.png", dpi=600, bbox_inches="tight")
     plt.show()  # Always show the plot
 
 
 
 plot_training_data_with_decision_boundary("poly")
 
-# Authors: The scikit-learn developers
-# SPDX-License-Identifier: BSD-3-Clause
-
-import matplotlib.pyplot as plt
-import numpy as np
-
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import PowerTransformer, QuantileTransformer
-
-N_SAMPLES = 2000
-FONT_SIZE = 6
-BINS = 60
-
-
-rng = np.random.RandomState(304)
-bc = PowerTransformer(method="box-cox")
-yj = PowerTransformer(method="yeo-johnson")
-# n_quantiles is set to the training set size rather than the default value
-# to avoid a warning being raised by this example
-qt = QuantileTransformer(
-    n_quantiles=500, output_distribution="normal", random_state=rng
-)
-size = (N_SAMPLES, 1)
-
-
-# lognormal distribution
-X_lognormal = rng.lognormal(size=size)
-
-# chi-squared distribution
-df = 3
-X_chisq = rng.chisquare(df=df, size=size)
-
-# weibull distribution
-a = 50
-X_weibull = rng.weibull(a=a, size=size)
-
-# gaussian distribution
-loc = 100
-X_gaussian = rng.normal(loc=loc, size=size)
-
-# uniform distribution
-X_uniform = rng.uniform(low=0, high=1, size=size)
-
-# bimodal distribution
-loc_a, loc_b = 100, 105
-X_a, X_b = rng.normal(loc=loc_a, size=size), rng.normal(loc=loc_b, size=size)
-X_bimodal = np.concatenate([X_a, X_b], axis=0)
-
-
-# create plots
-distributions = [
-    ("Lognormal", X_lognormal),
-    ("Chi-squared", X_chisq),
-    ("Weibull", X_weibull),
-    ("Gaussian", X_gaussian),
-    ("Uniform", X_uniform),
-    ("Bimodal", X_bimodal),
-]
-
-colors = ["#D81B60", "#0188FF", "#FFC107", "#B7A2FF", "#000000", "#2EC5AC"]
-
-fig, axes = plt.subplots(nrows=8, ncols=3, figsize=plt.figaspect(2))
-axes = axes.flatten()
-axes_idxs = [
-    (0, 3, 6, 9),
-    (1, 4, 7, 10),
-    (2, 5, 8, 11),
-    (12, 15, 18, 21),
-    (13, 16, 19, 22),
-    (14, 17, 20, 23),
-]
-axes_list = [(axes[i], axes[j], axes[k], axes[l]) for (i, j, k, l) in axes_idxs]
-
-
-for distribution, color, axes in zip(distributions, colors, axes_list):
-    name, X = distribution
-    X_train, X_test = train_test_split(X, test_size=0.5)
-
-    # perform power transforms and quantile transform
-    X_trans_bc = bc.fit(X_train).transform(X_test)
-    lmbda_bc = round(bc.lambdas_[0], 2)
-    X_trans_yj = yj.fit(X_train).transform(X_test)
-    lmbda_yj = round(yj.lambdas_[0], 2)
-    X_trans_qt = qt.fit(X_train).transform(X_test)
-
-    ax_original, ax_bc, ax_yj, ax_qt = axes
-
-    ax_original.hist(X_train, color=color, bins=BINS)
-    ax_original.set_title(name, fontsize=FONT_SIZE)
-    ax_original.tick_params(axis="both", which="major", labelsize=FONT_SIZE)
-
-    for ax, X_trans, meth_name, lmbda in zip(
-        (ax_bc, ax_yj, ax_qt),
-        (X_trans_bc, X_trans_yj, X_trans_qt),
-        ("Box-Cox", "Yeo-Johnson", "Quantile transform"),
-        (lmbda_bc, lmbda_yj, None),
-    ):
-        ax.hist(X_trans, color=color, bins=BINS)
-        title = "After {}".format(meth_name)
-        if lmbda is not None:
-            title += "\n$\\lambda$ = {}".format(lmbda)
-        ax.set_title(title, fontsize=FONT_SIZE)
-        ax.tick_params(axis="both", which="major", labelsize=FONT_SIZE)
-        ax.set_xlim([-3.5, 3.5])
-
-
-plt.tight_layout()
-plt.show()
